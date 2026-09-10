@@ -1,0 +1,28 @@
+{
+  "host": "192.168.1.1",
+  "port": 22,
+  "username": "root",
+  "password": "",
+  "key_path": null,
+  "key_passphrase": null,
+  "init_system": "auto",
+  "limits": {
+    "connect_timeout": 8.0,
+    "command_timeout": 12.0,
+    "keepalive_interval": 15,
+    "keepalive_count": 3,
+    "max_reconnect_attempts": 2,
+    "reconnect_backoff": 1.0,
+    "max_log_lines": 500
+  },
+  "security": {
+    "require_confirmation": true,
+    "allowed_services": [],
+    "denied_services": ["network", "firewall", "system", "boot", "done"],
+    "strict_host_key": false,
+    "known_hosts_path": null,
+    "allow_shell": false,
+    "shell_require_confirm": true,
+    "shell_deny_unsafe": true
+  }
+}
