@@ -2,6 +2,16 @@
 
 本文件遵循 [语义化版本](https://semver.org/lang/zh-CN/) 约定。
 
+## [0.2.1] - 文档优化（未发布）
+
+### 文档
+
+- README 修正工具数量描述（7 → 8，补充新增的 `run_shell` 高危 shell 工具），能力概览与自测预期输出同步更新。
+- README 新增「6.3 常见用法（场景示例）」章节：
+  - `router_info` 的 `capability` 机器可读字段示例，说明上层软件如何识别本连接器为「可 SSH 操作路由」的 MCP 连接器。
+  - 通过 `run_shell` 在 OpenWrt / ImmortalWrt 上安装插件（`opkg update && opkg install`）的完整示例、二次确认语义与返回结构。
+- 校正提交作者邮箱为 GitHub 隐私 noreply 地址（`49828512+LianXia233@users.noreply.github.com`），确保远端贡献者正确归属为 `LianXia233`。
+
 ## [0.2.0] - 2026-09-10
 
 ### 新增

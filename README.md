@@ -11,7 +11,7 @@
 | --- | --- |
 | 多 init 系统 | 自动探测 `procd`（OpenWrt）、`systemd`、`sysvinit`，也可手动指定 |
 | 连接复用 | 进程内复用单条 SSH 连接，带 keepalive 与断线重连 |
-| 只读 / 写入分离 | 4 个只读工具 + 3 个写入工具，通过 MCP annotations 标注 |
+| 只读 / 写入分离 | 4 个只读工具 + 3 个写入工具 + 1 个高危 shell 工具，通过 MCP annotations 标注 |
 | 写入二次确认 | 写入工具必须传 `confirm=<服务名>`，否则返回 `CONFIRMATION_REQUIRED` |
 | 命令白名单 | 所有命令以 argv 序列下发，不经 shell；服务名、路径、行数均做严格校验 |
 | 可选 shell 能力 | `run_shell` 默认关闭；开启后需二次确认，并默认拦截 rm -rf / mkfs / dd 等高危命令 |
@@ -234,6 +234,69 @@ Claude Desktop / 其他支持 MCP 的客户端：`claude_desktop_config.json` �
 }
 ```
 
+### 6.3 常见用法（场景示例）
+
+**识别连接器本质（capability）**
+
+`router_info` 的返回中包含机器可读的 `capability` 字段（固定为 `ssh-router-management`），上层软件可据此确认本连接器是「可通过 SSH 操作路由器」的 MCP 连接器，而非普通工具：
+
+```json
+{
+  "ok": true,
+  "tool": "router_info",
+  "data": {
+    "capability": "ssh-router-management",
+    "init_system": "procd",
+    "host": "192.168.1.1",
+    "security": {
+      "require_confirmation": true,
+      "allow_shell": false,
+      "denied_services": ["network", "firewall", "system", "boot", "done"]
+    }
+  }
+}
+```
+
+**通过 run_shell 安装插件（OpenWrt / ImmortalWrt）**
+
+服务管理类工具只覆盖已注册 init 脚本的服务，安装插件这类操作需走 `run_shell` 高危通道。先确保已设置 `ROUTER_MCP_ALLOW_SHELL=true` 启用该能力，再按「命令本身」做二次确认：
+
+```bash
+# 1) 刷新软件源并安装插件（OpenWrt 包管理器 opkg）
+run_shell(
+  command="opkg update && opkg install luci-app-sqm",
+  confirm="opkg update && opkg install luci-app-sqm"
+)
+
+# 2) 安装后启用并随系统自启
+run_shell(
+  command="/etc/init.d/sqm enable && /etc/init.d/sqm start",
+  confirm="/etc/init.d/sqm enable && /etc/init.d/sqm start"
+)
+```
+
+> 经验证，`opkg update` / `opkg install <包名>` / 带 `&&` 的连写均不会被高危拦截列表误拦；被拦的只有 `rm -rf` / `mkfs` / `dd if=` / 写 `/dev/*` / fork 炸弹 / `curl ... | sh` 等模式。
+> `run_shell` 以 **root** 身份在远端登录 shell 中执行，绕过服务白名单，仅应在可信网络内启用；每次执行都会写入审计日志（仅含命令本身，不含任何凭据）。
+
+**run_shell 返回示例**
+
+```json
+{
+  "ok": true,
+  "tool": "run_shell",
+  "data": {
+    "raw_command": "opkg update && opkg install luci-app-sqm",
+    "exit_status": 0,
+    "stdout": "Installing luci-app-sqm (...)",
+    "stderr": "",
+    "host": "192.168.1.1",
+    "reused_connection": true,
+    "confirmed": true,
+    "warning": "命令以 root 身份在路由器上执行，已绕过服务白名单；请确认输出不含敏感信息"
+  }
+}
+```
+
 ---
 
 ## 7. 安全模型
@@ -298,7 +361,7 @@ ROUTER_MCP_HOST=192.168.1.1 ROUTER_MCP_USER=root ROUTER_MCP_PASSWORD=xxx \
 python scripts/mcp_smoke.py --call service_status --args '{"name": "dnsmasq"}'
 ```
 
-预期输出：握手成功、7 个工具、读写标注正确；调用失败时返回 `ok=false` 与错误码。
+预期输出：握手成功、8 个工具、读写标注正确；调用失败时返回 `ok=false` 与错误码。
 
 ### 第 3 层：真实设备自测（只读）
 
