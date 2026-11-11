@@ -4,6 +4,14 @@
 
 ## [0.2.1] - 文档优化（未发布）
 
+### CI（2026-11-12）
+
+- `.github/workflows/ci.yml`：`actions/checkout@v4` → `v7`、`actions/setup-python@v5` → `v7`。
+- GitHub 已于 2026-09-23 从托管 runner 移除 Node 20 运行时，仍声明 `node20` 的 action 会被强制跑在 Node 24 上并打印 `Node.js 20 is deprecated` 告警，属于未验证状态；本次按各 action 的 `action.yml` 逐一核对 `runs.using` 后统一升级。
+- **仅改 CI 配置**：项目源码、`node-version` / `python-version` / `go-version` 等工具链版本、产物命名与 Release 流程均未改动。告警指的是 action 自身声明的运行时，不是项目构建所用的 Node 版本。
+  Python 版本矩阵（含 `cache: pip`）与 MCP 协议层测试保持不变。
+- 升级后全仓复扫 59 个工作流/Action 文件：`node20` / `node16` / `node12` 引用残留为 0，所有 YAML 均可解析。
+
 ### 文档
 
 - README 修正工具数量描述（7 → 8，补充新增的 `run_shell` 高危 shell 工具），能力概览与自测预期输出同步更新。
